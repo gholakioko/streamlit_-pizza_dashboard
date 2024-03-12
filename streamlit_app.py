@@ -1,4 +1,3 @@
-# Import necessary libraries
 import streamlit as st
 import pandas as pd
 import duckdb as duck 
@@ -6,42 +5,41 @@ import random
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Configure Streamlit page settings
 st.set_page_config(page_title="Sales Dashboard", page_icon=":bar_chart:", layout="wide")
 
-# Title of the Streamlit dashboard
-st.title("Sales Streamlit Dashboard")
 
-# Sidebar configuration for file upload
+st.title("Sales Streamlit Dashboard")
+#st.markdown("_Prototype v0.4.1_")
+
 with st.sidebar:
     st.header("Configuration")
     uploaded_file = st.file_uploader("Choose a file")
 
-# If no file is uploaded, display info message and stop the script
 if uploaded_file is None:
-    st.info("Upload a file through config", icon="ℹ️")
+    st.info(" Upload a file through config", icon="ℹ️")
     st.stop()
 
-# Data loading function with caching
+
+
+
 @st.cache_data
 def load_data(path: str):
     df = pd.read_excel(path)
     return df
 
-# Load data from the uploaded file
+
 df = load_data(uploaded_file)
+all_months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-# List of all months for later use
-all_months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-# Expander to preview loaded data
 with st.expander("Data Preview"):
     st.dataframe(
         df,
         column_config={"Year": st.column_config.NumberColumn(format="%d")},
     )
 
-# Function to plot a metric with optional graph
+
+
+
 def plot_metric(
     label, value, prefix="", suffix="", show_graph=False, color_graph=""
 ):
@@ -49,63 +47,83 @@ def plot_metric(
     
     fig.add_trace(
         go.Indicator(
-            value=value,
-            number={"prefix": prefix, "suffix": suffix, "font.size": 28},
-            gauge={"axis": {"visible": False}},
-            title={"text": label, "font": {"size": 24}},
+            value = value,
+            number = {"prefix" : prefix, "suffix" : suffix, "font.size" : 28},
+            gauge = {"axis" : {"visible" : False},},
+            title = {"text" : label, "font" : {"size" : 24},},
         )
     )
     
     if show_graph:
         fig.add_trace(
             go.Scatter(
-               y=random.sample(range(0, 101), 30),
-               hoverinfo="skip",
-               fill="tozeroy",
-               fillcolor=color_graph,
-               line={"color": color_graph},
+               y = random.sample(range(0, 101), 30),
+               hoverinfo = "skip",
+               fill = "tozeroy",
+               fillcolor = color_graph,
+               line = {"color" : color_graph, },
             )
         )
         
     fig.update_xaxes(visible=False, fixedrange=True)
     fig.update_yaxes(visible=False, fixedrange=True)
     fig.update_layout(
-        height=100,
-        margin=dict(t=30, b=0),
-        showlegend=False,
-        plot_bgcolor="white",
+        # paper_bgcolor = "lightgrey",
+        height = 100,
+        margin = dict(t=30, b=0),
+        showlegend = False,
+        plot_bgcolor = "white",
     )
     
     st.plotly_chart(fig, use_container_width=True)
 
-# Function to plot a gauge chart
 def plot_gauge(
-    indicator_number, indicator_color, indicator_suffix, indicator_title, max_bound
+    indicator_number, 
+    indicator_color, 
+    indicator_suffix, 
+    indicator_title, 
+    max_bound
 ) -> None:
+    """
+    Plots a gauge chart with the given parameters.
+
+    Args:
+        indicator_number (float): The value of the indicator.
+        indicator_color (str): The color of the gauge bar.
+        indicator_suffix (str): The suffix of the indicator value.
+        indicator_title (str): The title of the gauge.
+        max_bound (float): The maximum value of the gauge.
+
+    Returns:
+        None
+    """
     fig = go.Figure(
         go.Indicator(
-            value=indicator_number,
-            mode="gauge+number",
-            domain={"x": [0, 1], "y": [0, 1]},
-            number={"suffix": indicator_suffix, "font.size": 26},
-            gauge={"axis": {"range": [0, max_bound], "tickwidth": 1},
-                   "bar": {"color": indicator_color}},
-            title={"text": indicator_title, "font": {"size": 28}},
+            value = indicator_number,
+            mode = "gauge+number",
+            domain = {"x": [0,1], "y": [0,1]},
+            number = {"suffix" : indicator_suffix, "font.size" : 26},
+            gauge = {"axis" : {"range" : [0, max_bound], "tickwidth" : 1},
+                     "bar" : {"color": indicator_color},},
+            title = {"text" : indicator_title, "font" : {"size" : 28},},
         )
     )
     
     fig.update_layout(
-        height=200,
-        margin=dict(l=10, r=10, t=50, b=10, pad=8),
+        # paper_bgcolor = "lightgrey",
+        height = 200,
+        margin = dict(l=10, r=10, t=50, b=10, pad=8),
     )
     
     st.plotly_chart(fig, use_container_width=True)
 
-# Function to plot the top-right plot of the dashboard
 def plot_top_right():
+    """
+    Plots the top right plot of the dashboard.
+    This plot shows the monthly sales for each business unit and scenario.
+    """
     sales_data = duck.sql(
         f"""
-        # SQL Query to extract monthly sales for each business unit and scenario
         WITH sales_data AS (
             UNPIVOT(
                 SELECT
@@ -116,11 +134,13 @@ def plot_top_right():
                     WHERE Year='2023'
                     AND Account = 'Sales'                    
                 )
+            
             ON {','.join(all_months)}
             INTO 
                 NAME month
                 VALUE sales
         ),
+        
         aggregated_sales AS (
             SELECT
                 Scenario,
@@ -129,38 +149,44 @@ def plot_top_right():
                 FROM sales_data
                 GROUP BY business_unit, Scenario
         )
+        
         SELECT * FROM aggregated_sales
+        
         """
+        
     ).df()
     
-    # Plotting the bar chart
     fig = px.bar(
         sales_data,
-        x="business_unit",
-        y="sales",
-        color="Scenario",
-        barmode="group",
-        text_auto=".2s",
-        title="Sales for Year 2023",
-        height=400,
+        x = "business_unit",
+        y = "sales",
+        color = "Scenario",
+        barmode = "group",
+        text_auto = ".2s",
+        title = "Sales for Year 2023",
+        height = 400,
     )
     
-    # Customize chart layout
     fig.update_traces(
-        textfont_size=12,
-        textangle=0,
-        textposition="outside",
-        cliponaxis=False,
+        textfont_size = 12,
+        textangle = 0,
+        textposition = "outside",
+        cliponaxis = False,
     )
     
-    # Display the chart
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width = True)
 
-# Function to plot the bottom-left plot of the dashboard
 def plot_bottom_left():
+    """
+    Plots the bottom left plot of the dashboard.
+    This plot shows the monthly budget vs forecast for the software business unit.
+    Parameters:
+        sales_data (pd.DataFrame): the data frame containing the monthly sales data
+    Returns:
+        None
+    """
     sales_data = duck.sql(
         f"""
-        # SQL Query to extract monthly budget vs forecast for the software business unit
         WITH sales_data as (
             SELECT 
             Scenario,
@@ -170,15 +196,15 @@ def plot_bottom_left():
             AND Account = 'Sales'
             AND business_unit = 'Software'
         )
+        
         UNPIVOT sales_data 
         ON {','.join(all_months)}
         INTO
             NAME month
             VALUE sales
         """
-    ).df()
+        ).df()
     
-    # Plotting the line chart
     fig = px.line(
         sales_data, 
         x="month", 
@@ -187,15 +213,13 @@ def plot_bottom_left():
         markers=True,
         text="sales",
         title="Monthly Budget vs Forecast 2023",
-    )
+        )
     fig.update_traces(textposition="top center")
     st.plotly_chart(fig, use_container_width=True)
-
-# Function to plot the bottom-right plot of the dashboard
+    
 def plot_bottom_right():
     sales_data = duck.sql(
         f"""
-        # SQL Query to extract actual yearly sales per account
         WITH sales_data AS (
             UNPIVOT ( 
                 SELECT 
@@ -209,6 +233,7 @@ def plot_bottom_right():
                 NAME year
                 VALUE sales
         ),
+
         aggregated_sales AS (
             SELECT
                 Account,
@@ -217,11 +242,11 @@ def plot_bottom_right():
             FROM sales_data
             GROUP BY Account, Year
         )
+        
         SELECT * FROM aggregated_sales
-        """
+    """
     ).df()
-    
-    # Plotting the bar chart
+
     fig = px.bar(
         sales_data,
         x="Year",
@@ -230,13 +255,55 @@ def plot_bottom_right():
         title="Actual Yearly Sales Per Account",
     )
     st.plotly_chart(fig, use_container_width=True)
+    
 
-# Streamlit layout configuration
+
+# ##############   STREAMLIT LAYOUT 
+
+
 top_left_column, top_right_column = st.columns((2, 1))
 bottom_left_column, bottom_right_column = st.columns(2)
 
-# Top left column layout
 with top_left_column:
     column_1, column_2, column_3, column_4 = st.columns(4)
     
     with column_1:
+        plot_metric(
+            "Total Accounts Receivable",
+            6621280,
+            prefix="$",
+            suffix="",
+            show_graph=True,
+            color_graph="rgba(0, 104, 201, 0.2)",
+        )
+        
+        plot_gauge(1.86, "#0068C9", "%", "Current Ratio", 3)
+        
+    with column_2:
+        plot_metric(
+            "Total Accounts Payable",
+            1630270,
+            prefix="$",
+            suffix="",
+            show_graph=True,
+            color_graph="rgba(255, 43, 43, 0.2)",
+        )
+        
+        plot_gauge(10, "#FF8700", " days", "In Stock", 31)
+        
+    with column_3:
+        plot_metric("Equity Ratio", 75.38, prefix="", suffix=" %", show_graph=False)
+        plot_gauge(7, "#FF2B2B", " days", "Out Stock", 31)
+    
+    with column_4:
+        plot_metric("Debt Equity", 1.10, prefix="", suffix=" %", show_graph=False)
+        plot_gauge(28, "#29B09D", " days", "Delay", 31)
+        
+with top_right_column:
+    plot_top_right()
+    
+with bottom_left_column:
+    plot_bottom_left()
+    
+with bottom_right_column:
+    plot_bottom_right()
