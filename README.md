@@ -16,7 +16,7 @@ This project provides a dynamic sales dashboard built with the Streamlit framewo
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/gholakioko/streamlit-sales-dashboard.git
+   git clone https://github.com/gholakioko/streamlit_sales-dashboard.git
    ```
 
 2. **Install dependencies:**
